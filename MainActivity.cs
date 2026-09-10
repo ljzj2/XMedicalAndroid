@@ -1,4 +1,5 @@
 using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
 
 namespace XMedicalAndroid;
@@ -41,9 +42,12 @@ public class MainActivity : Activity
                 fs.Dispose();
 
                 var vocab = Services.WordPieceTokenizer.LoadVocabFromFile(vocabPath);
-                var tokenizer = new Services.WordPieceTokenizer(vocab);
+                //tokenizer = new Services.WordPieceTokenizer(vocab);
 
-                var (inputIds, attentionMask) = tokenizer.Encode("This is a sample", _maxLen);
+                //var (inputIds, attentionMask) = tokenizer.Encode("This is a sample", _maxLen);
+                tokenizer = BertTokenizer.Create(vocabPath);
+
+                var encodings = tokenizer.EncodeToIds("This is a sample");
 
                 var path = Path.Combine(CacheDir.AbsolutePath, "allmini.onnx");
                 using (var s1 = Assets.Open("Models/model.onnx"))
@@ -55,6 +59,24 @@ public class MainActivity : Activity
                 }
 
                 _session = new InferenceSession(path);
+
+                var inputIds = new long[_maxLen];
+                long[] attentionMask = new long[_maxLen];
+
+                var idTensor = new DenseTensor<long>(new[] { 1, _maxLen });
+
+                for (int i = 0; i < encodings.Count; i++)
+                {
+                    inputIds[i] = encodings[i];
+                    idTensor[0, i] = encodings[i];
+                }
+
+                var inputs = new[]
+                {
+                    NamedOnnxValue.CreateFromTensor("input_ids",idTensor)
+                };
+
+                var results = _session.Run(inputs);
             }
         }
 
@@ -64,6 +86,7 @@ public class MainActivity : Activity
 
     private InferenceSession? _session;
     private int _maxLen = 128;
+    private Tokenizer tokenizer;
 
 
 }
