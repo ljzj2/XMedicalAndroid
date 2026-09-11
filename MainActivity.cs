@@ -40,8 +40,6 @@ public class MainActivity : Activity
                 s.CopyTo(fs);
 
                 fs.Dispose();
-
-                var vocab = Services.WordPieceTokenizer.LoadVocabFromFile(vocabPath);
                 //tokenizer = new Services.WordPieceTokenizer(vocab);
 
                 //var (inputIds, attentionMask) = tokenizer.Encode("This is a sample", _maxLen);
@@ -57,18 +55,16 @@ public class MainActivity : Activity
                         s1.CopyTo(fs1);
                     }
                 }
-
                 _session = new InferenceSession(path);
 
                 var inputIds = new long[_maxLen];
                 long[] attentionMask = new long[_maxLen];
 
-                var idTensor = new DenseTensor<long>(new[] { 1, _maxLen });
-
+                var idTensor = new DenseTensor<long>([1, _maxLen]);
                 for (int i = 0; i < encodings.Count; i++)
                 {
                     inputIds[i] = encodings[i];
-                    idTensor[0, i] = encodings[i];
+                    idTensor[0, i] = 1;
                 }
 
                 var inputs = new[]
